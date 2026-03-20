@@ -7,9 +7,9 @@ echo.
 :: Navigate to the Bhrmshree directory
 cd /d "c:\mini project\Bhrmshree"
 
-:: Check if the dashboard has been built (static export)
-if not exist "dashboard\out\index.html" (
-    echo [BUILD] Dashboard static export not found. Building now...
+:: Check if the dashboard has been built
+if not exist "dashboard\.next\server\app\index.html" (
+    echo [BUILD] Dashboard not built yet. Building now...
     echo.
     cd /d "c:\mini project\Bhrmshree\dashboard"
     call npm install

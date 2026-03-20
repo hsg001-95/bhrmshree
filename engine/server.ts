@@ -23,8 +23,10 @@ export async function startBhrmshreeServer() {
   app.use(cors());
   app.use(express.json());
 
-  // Serve the dashboard static export
-  app.use(express.static(path.join(process.cwd(), 'dashboard/out')));
+  // Serve the dashboard static export (Next.js 16 places files here)
+  const dashboardBase = path.join(process.cwd(), 'dashboard', '.next');
+  app.use('/_next/static', express.static(path.join(dashboardBase, 'static')));
+  app.use(express.static(path.join(dashboardBase, 'server', 'app')));
   
   // Serve screenshots directory
   app.use('/screenshots', express.static(path.join(process.cwd(), 'dashboard/public/screenshots')));
