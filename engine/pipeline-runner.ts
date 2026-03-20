@@ -7,6 +7,7 @@ import type { Server } from 'socket.io';
 import fs from 'fs/promises';
 import path from 'path';
 import dotenv from 'dotenv';
+import { supabase } from './db.ts';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ export class PipelineRunner {
   private io: Server;
   private apiKey: string;
   private screenshots: ScreenshotManager;
+  private scanUuid?: string;
 
   // Live state for late-joining clients
   public currentState: {
@@ -77,6 +79,40 @@ export class PipelineRunner {
       this.currentState.tests.push(test);
     }
     this.emit({ event: test.status === 'running' ? 'test-start' : 'test-result', testCase: test });
+    
+    // Sync to Supabase
+    this.syncSupabaseTest(test).catch(err => console.error('[Supabase Sync Error]', err.message));
+  }
+
+  private async syncSupabaseTest(test: TestCase) {
+    if (!this.scanUuid) return;
+    await supabase.from('test_cases').upsert({
+      scan_id: this.scanUuid,
+      test_id: test.id,
+      name: test.name,
+      description: test.description || null,
+      phase: test.phase,
+      status: test.status,
+      severity: test.severity || null,
+      error_message: test.errorMessage || null,
+      duration_ms: test.durationMs || null,
+      screenshot_url: test.screenshotUrl || null,
+      video_url: test.videoUrl || null
+    }, { onConflict: 'scan_id,test_id' });
+  }
+
+  private async syncSupabaseFinding(finding: Finding) {
+    if (!this.scanUuid) return;
+    await supabase.from('findings').insert({
+      scan_id: this.scanUuid,
+      type: finding.type,
+      severity: finding.severity,
+      title: finding.title,
+      description: finding.description || null,
+      repro_steps: finding.reproSteps || [],
+      location: finding.location || null,
+      screenshot_url: finding.screenshotUrl || null
+    });
   }
 
   /**
@@ -196,9 +232,23 @@ export class PipelineRunner {
       findings: [],
       logs: [],
     };
+    this.scanUuid = undefined;
 
     this.log(`🎯 Target locked: ${targetUrl}`, 'system');
     this.log(`🔑 Scan ID: ${scanId}`, 'system');
+
+    // Link to Supabase Scan
+    try {
+      const { data } = await supabase.from('scans').select('id').eq('scan_id', scanId).single();
+      if (data) {
+        this.scanUuid = data.id;
+        await supabase.from('scans').update({ status: 'running', current_phase: 'DISCOVERY' }).eq('id', this.scanUuid);
+      } else {
+        this.log(`⚠️ Scan ID ${scanId} not found in Supabase. Running in local-only mode.`, 'system');
+      }
+    } catch (e) {
+      this.log(`⚠️ Supabase lookup error. Running in local-only mode.`, 'system');
+    }
 
     // ═══════════ PHASE 0: CODEBASE CONTEXT ═══════════
     let codeContext = '';
@@ -282,16 +332,34 @@ export class PipelineRunner {
       const result = await explorer.executeTest(targetUrl, testPlan, fullVideoPath);
       
       test.durationMs = Date.now() - startTimeTest;
+
+      // Upload video to Supabase
+      let cloudVideoUrl = `/videos/${scanId}/${videoFileName}`; // default local
+      try {
+        const videoBuffer = await fs.readFile(fullVideoPath);
+        const { data: uploadData, error } = await supabase.storage
+          .from('scans')
+          .upload(`${scanId}/${videoFileName}`, videoBuffer, { contentType: 'video/webm' });
+        
+        if (!error && uploadData) {
+          const { data: { publicUrl } } = supabase.storage.from('scans').getPublicUrl(uploadData.path);
+          cloudVideoUrl = publicUrl;
+        } else {
+          this.log(`⚠️ Supabase upload failed: ${error?.message}`, 'system');
+        }
+      } catch (e: any) {
+        this.log(`⚠️ Supabase upload error: ${e.message}`, 'system');
+      }
       
       if (result.success) {
         test.status = 'passed';
-        test.videoUrl = `/videos/${scanId}/${videoFileName}`;
+        test.videoUrl = cloudVideoUrl;
         explorerProgress.passCount++;
         this.log(`✅ Passed: ${test.name}`, 'qa');
       } else {
         test.status = 'failed';
         test.errorMessage = result.error || 'Test failed without a specific error message.';
-        test.videoUrl = `/videos/${scanId}/${videoFileName}`;
+        test.videoUrl = cloudVideoUrl;
         explorerProgress.failCount++;
         this.log(`❌ Failed: ${test.name}`, 'qa');
         this.log(`   └─ ${result.error}`, 'qa');
@@ -308,6 +376,7 @@ export class PipelineRunner {
         };
         this.currentState.findings.push(finding);
         this.emit({ finding });
+        this.syncSupabaseFinding(finding).catch(e => console.error(e));
       }
 
       this.emitTestUpdate(test);
@@ -409,6 +478,7 @@ export class PipelineRunner {
           };
           this.currentState.findings.push(finding);
           this.emit({ finding });
+          this.syncSupabaseFinding(finding).catch(e => console.error(e));
           this.log(`🔥 VULNERABILITY: ${test.name} [${test.severity}]`, 'sec');
         } else {
           test.status = 'passed';
@@ -427,6 +497,7 @@ export class PipelineRunner {
         for (const finding of shadowResult.findings) {
           this.currentState.findings.push(finding);
           this.emit({ finding });
+          this.syncSupabaseFinding(finding).catch(e => console.error(e));
         }
       }
 
@@ -517,6 +588,7 @@ export class PipelineRunner {
           };
           this.currentState.findings.push(finding);
           this.emit({ finding });
+          this.syncSupabaseFinding(finding).catch(e => console.error(e));
           this.log(`🔥 EXPOSED: ${test.name}`, 'sec');
         } else {
           test.status = 'passed';
@@ -535,6 +607,7 @@ export class PipelineRunner {
         for (const finding of sweeperResult.findings) {
           this.currentState.findings.push(finding);
           this.emit({ finding });
+          this.syncSupabaseFinding(finding).catch(e => console.error(e));
         }
       }
 
@@ -571,6 +644,20 @@ export class PipelineRunner {
     };
 
     this.emit({ event: 'scan-complete', scanSummary });
+    
+    if (this.scanUuid) {
+      await supabase.from('scans').update({
+        status: 'completed',
+        current_phase: 'COMPLETED',
+        total_duration_ms: totalTime,
+        total_findings: allFindings.length,
+        critical_count: scanSummary.criticalCount,
+        high_count: scanSummary.highCount,
+        medium_count: scanSummary.mediumCount,
+        low_count: scanSummary.lowCount,
+        completed_at: new Date().toISOString()
+      }).eq('id', this.scanUuid);
+    }
 
     this.log('═══════════════════════════════════════════', 'system');
     this.log('📋 SCAN COMPLETE — FINAL REPORT', 'system');

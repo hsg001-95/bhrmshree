@@ -9,6 +9,7 @@ import {
   CircleX, Loader, ChevronDown, Camera, ExternalLink
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import { createClient } from '@/lib/supabase';
 
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS
@@ -101,7 +102,7 @@ export default function BhrmshreeDashboard() {
   }, []);
 
   useEffect(() => {
-    const socket: Socket = io('http://localhost:4004');
+    const socket: Socket = io('http://localhost:4005');
 
     socket.on('connect', () => {
       setIsConnected(true);
@@ -195,6 +196,31 @@ export default function BhrmshreeDashboard() {
   // ─── Actions ──────────────────────────────────────────
   const startScan = async () => {
     if (!targetUrl) return;
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setLogs([{ msg: '⚠️ You must be logged in to start a scan. Please sign in.', type: 'system', time: new Date().toLocaleTimeString() }]);
+      return;
+    }
+
+    const scanIdString = `scan-${Date.now()}`;
+    
+    // Insert into Supabase
+    const { error } = await supabase.from('scans').insert({
+      user_id: user.id,
+      scan_id: scanIdString,
+      target_url: targetUrl,
+      repo_path: repoDir || null,
+      status: 'pending'
+    });
+
+    if (error) {
+      setLogs([{ msg: `⚠️ Failed to create scan record: ${error.message}`, type: 'system', time: new Date().toLocaleTimeString() }]);
+      return;
+    }
+
     setScanTime(0);
     setFindings([]);
     setTests([]);
@@ -210,10 +236,10 @@ export default function BhrmshreeDashboard() {
     setActiveTab('explorer');
 
     try {
-      await fetch('http://localhost:4004/api/scan', {
+      await fetch('http://localhost:4005/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUrl, repoDir, id: `scan-${Date.now()}` })
+        body: JSON.stringify({ targetUrl, repoDir, id: scanIdString })
       });
     } catch {
       setLogs(prev => [...prev, { msg: '⚠️ Failed to connect to engine. Is the server running?', type: 'system', time: new Date().toLocaleTimeString() }]);

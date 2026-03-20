@@ -16,17 +16,13 @@ export async function startBhrmshreeServer() {
     cors: { origin: "*" }
   });
 
-  const PORT = process.env.PORT || 4004;
+  // Engine API now runs on 4005, Next.js dashboard on 4004
+  const PORT = process.env.PORT || 4005;
   const pipeline = new PipelineRunner(io);
 
   // Enable CORS for all routes (dashboard is on a different port)
   app.use(cors());
   app.use(express.json());
-
-  // Serve the dashboard static export (Next.js 16 places files here)
-  const dashboardBase = path.join(process.cwd(), 'dashboard', '.next');
-  app.use('/_next/static', express.static(path.join(dashboardBase, 'static')));
-  app.use(express.static(path.join(dashboardBase, 'server', 'app')));
   
   // Serve screenshots directory
   app.use('/screenshots', express.static(path.join(process.cwd(), 'dashboard/public/screenshots')));

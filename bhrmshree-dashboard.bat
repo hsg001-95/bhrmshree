@@ -1,34 +1,28 @@
 @echo off
 echo ==================================================
-echo         STARTING BHRMSHREE DASHBOARD SERVER
+echo         STARTING BHRMSHREE SAAS PLATFORM
 echo ==================================================
 echo.
 
 :: Navigate to the Bhrmshree directory
 cd /d "c:\mini project\Bhrmshree"
 
-:: Check if the dashboard has been built
-if not exist "dashboard\.next\server\app\index.html" (
-    echo [BUILD] Dashboard not built yet. Building now...
-    echo.
-    cd /d "c:\mini project\Bhrmshree\dashboard"
-    call npm install
-    call npm run build
-    cd /d "c:\mini project\Bhrmshree"
-    echo.
-    echo [BUILD] Dashboard build complete!
-    echo.
-)
+echo Starting Next.js Dashboard on Port 4004...
+start "Bhrmshree Dashboard (Next.js)" cmd /k "cd dashboard && npm run dev -p 4004"
 
-echo The Dashboard will be available at: http://localhost:4004
+echo Starting Backend Engine API on Port 4005...
+start "Bhrmshree Engine (Node.js)" cmd /k "npx tsx bhrmshree.ts serve"
+
+echo.
+echo The Platform will be available at: http://localhost:4004
 echo (A browser window will open automatically in a moment...)
 echo.
 
-:: Automatically open the browser after a 3 second delay
+:: Automatically open the browser after a 5 second delay to let servers start
+timeout /t 5 /nobreak
 start "" http://localhost:4004
 
-:: Run the CLI in serve mode
-call npx tsx bhrmshree.ts serve
-
-:: Keep the window open if the server crashes or is stopped
+:: Keep the main window open
+echo Both servers are running in separate windows.
+echo Close this window and the other command prompts to stop the platform.
 pause
