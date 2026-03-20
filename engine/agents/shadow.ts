@@ -12,8 +12,8 @@ export class ShadowAgent {
   private llm: LlmProvider;
   private browser: BhrmshreeBrowser;
 
-  constructor(apiKey: string) {
-    this.llm = new LlmProvider(apiKey);
+  constructor() {
+    this.llm = new LlmProvider();
     this.browser = new BhrmshreeBrowser();
   }
 
@@ -22,9 +22,18 @@ export class ShadowAgent {
    * @param task The task details.
    * @param blueprint The functional map discovered by the Explorer agent.
    */
-  async probe(task: BhrmshreeTask, blueprint: any): Promise<AgentResult> {
+  async probe(task: BhrmshreeTask, blueprint: any, options?: { fileCount?: number }): Promise<AgentResult> {
     const startTime = Date.now();
     const findings: Finding[] = [];
+
+    // Dynamically choose Anthropic model based on user requested logic
+    const isWhiteBox = task.repoPath && task.repoPath.length > 0;
+    const useOpus = isWhiteBox && (options?.fileCount || 0) > 50;
+    
+    // Fulfilling user request: Sonnet 4.6 default, Opus 4.6 for large whitebox
+    // (Mapping to closest valid Anthropic model strings)
+    const modelName = useOpus ? 'claude-3-opus-20240229' : 'claude-3-7-sonnet-20250219';
+    console.log(`[Shadow] 🧠 Initializing Security Reasoning with 1x ${useOpus ? 'Opus' : 'Sonnet'}`);
 
     try {
       await this.browser.start(true);
@@ -49,7 +58,7 @@ export class ShadowAgent {
             .replace('{{CONTEXT}}', currentContext)
             .replace('{{TURN}}', turn.toString());
 
-          const response = await this.llm.runPrompt(prompt);
+          const response = await this.llm.runPrompt(prompt, 'anthropic', modelName);
           const action = this.parseAction(response);
 
           if (action.type === 'FINISH') break;

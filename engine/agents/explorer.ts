@@ -12,8 +12,8 @@ export class ExplorerAgent {
   private llm: LlmProvider;
   private browser: BhrmshreeBrowser;
 
-  constructor(apiKey: string) {
-    this.llm = new LlmProvider(apiKey);
+  constructor() {
+    this.llm = new LlmProvider();
     this.browser = new BhrmshreeBrowser();
   }
 
@@ -64,7 +64,8 @@ ONLY RETURN THE JSON ARRAY. NO MARKDOWN FORMATTING OR BACKTICKS.
 `;
 
     try {
-      const response = await this.llm.runPrompt(prompt);
+      // Configure Explorer to strictly use Gemini Flash as requested
+      const response = await this.llm.runPrompt(prompt, 'gemini', 'gemini-1.5-flash');
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (e: any) {

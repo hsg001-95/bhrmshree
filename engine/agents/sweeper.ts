@@ -10,9 +10,9 @@ export class SweeperAgent {
   private browser: BhrmshreeBrowser;
   private llm: LlmProvider;
 
-  constructor(apiKey: string) {
+  constructor() {
     this.browser = new BhrmshreeBrowser();
-    this.llm = new LlmProvider(apiKey);
+    this.llm = new LlmProvider();
   }
 
   /**
@@ -36,7 +36,7 @@ export class SweeperAgent {
       Output ONLY a comma-separated list of paths starting with /.
     `;
 
-    const response = await this.llm.runPrompt(prompt);
+    const response = await this.llm.runPrompt(prompt, 'gemini', 'gemini-1.5-flash');
     return response.split(',').map(p => p.trim()).filter(p => p.startsWith('/'));
   }
 

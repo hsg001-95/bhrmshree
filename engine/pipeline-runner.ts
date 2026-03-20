@@ -20,6 +20,7 @@ export class PipelineRunner {
   private apiKey: string;
   private screenshots: ScreenshotManager;
   private scanUuid?: string;
+  private whiteBoxFileCount: number = 0;
 
   // Live state for late-joining clients
   public currentState: {
@@ -188,6 +189,7 @@ export class PipelineRunner {
     };
     
     const files = await walk(repoPath);
+    this.whiteBoxFileCount = files.length;
     this.log(`📄 Found ${files.length} source files for white-box analysis`, 'system');
     
     // Read key files (API routes, auth, config, etc.)
@@ -232,7 +234,7 @@ export class PipelineRunner {
       findings: [],
       logs: [],
     };
-    this.scanUuid = undefined;
+    this.whiteBoxFileCount = 0;
 
     this.log(`🎯 Target locked: ${targetUrl}`, 'system');
     this.log(`🔑 Scan ID: ${scanId}`, 'system');
@@ -275,7 +277,7 @@ export class PipelineRunner {
     };
 
     try {
-      const explorer = new ExplorerAgent(this.apiKey);
+      const explorer = new ExplorerAgent();
       const explorerTask: BhrmshreeTask = {
         id: scanId,
         role: 'EXPLORER',
@@ -385,7 +387,7 @@ export class PipelineRunner {
     }
 
     explorerProgress.status = 'completed';
-    explorerProgress.currentTest = undefined;
+    delete explorerProgress.currentTest;
     explorerProgress.completedAt = Date.now();
     this.emitPhaseProgress(explorerProgress);
     this.log(`🎉 Phase 1 Explorer completed.`, 'qa');
@@ -421,7 +423,7 @@ export class PipelineRunner {
 
     let shadowResult: AgentResult | null = null;
     try {
-      const shadow = new ShadowAgent(this.apiKey);
+      const shadow = new ShadowAgent();
       const task: BhrmshreeTask = {
         id: scanId,
         role: 'SHADOW',
@@ -452,7 +454,7 @@ export class PipelineRunner {
 
         if (i === 0) {
           try {
-            shadowResult = await shadow.probe(task, blueprint);
+            shadowResult = await shadow.probe(task, blueprint, { fileCount: this.whiteBoxFileCount });
           } catch (error: any) {
             this.log(`⚠️ Shadow agent error: ${error.message}`, 'system');
           }
@@ -536,7 +538,7 @@ export class PipelineRunner {
 
     let sweeperResult: AgentResult | null = null;
     try {
-      const sweeper = new SweeperAgent(this.apiKey);
+      const sweeper = new SweeperAgent();
       const task: BhrmshreeTask = {
         id: scanId,
         role: 'EXPLORER',
