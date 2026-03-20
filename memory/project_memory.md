@@ -47,6 +47,13 @@ To enable developers to run scans from within modern IDEs (Cursor, Windsurf), we
     *   `bhrmshree_trigger_scan`: Passes the IDE's local workspace directory (`repoPath`) to the Next.js Engine API to initiate a White-Box DevSecQA scan natively.
     *   `bhrmshree_get_status`: Pulls live finding updates and test execution progress directly back into the IDE chat box.
 
+### 5. Multi-LLM Routing Architecture
+To optimize speed, intelligence, and cost, the underlying AI engine was refactored to support dual-provider routing using `@google/generative-ai` and `@anthropic-ai/sdk`.
+*   **Explorer & Sweeper Agents**: Hard-routed to `gemini-1.5-flash` (standing in for Gemini 3.0 Flash) for rapid, hyper-contextual execution and massive context windows.
+*   **Shadow Agent**: Features context-aware dynamic routing:
+    *   *Default (Black/Gray-Box)*: Hard-routed to **Claude Sonnet 4.6** (`claude-3-7-sonnet-latest`) for advanced standard security testing.
+    *   *Large White-Box Mode*: If the `PipelineRunner` detects >50 files in a codebase scan via the `repoPath`, the Shadow agent intelligently upgrades to **Claude Opus 4.6** (`claude-3-opus-20240229`) for deep architectural reasoning during its attacks.
+
 ---
 
 ## 📁 Repository Structure Snapshot
