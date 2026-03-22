@@ -1,0 +1,12 @@
+node_modules/
+.git/
+.env*
+! .env.example
+dashboard/
+mcp/
+dashboard_public/
+playwright-report/
+test-results/
+memory/
+*.docx
+*.log
