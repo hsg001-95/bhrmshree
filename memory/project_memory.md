@@ -77,6 +77,14 @@ To optimize speed, intelligence, and cost, the underlying AI engine was refactor
 
 ---
 
+### 6. Phase 6: UI Refinements (March 22, 2026)
+Built out supporting dashboard views for a complete user experience:
+*   `/dashboard/history` — Scan History page with aggregate stats (total scans, completed, findings, critical), search/filter bar, and a rich data table linking to individual reports.
+*   `/dashboard/scan/[id]` — In-depth Report View with 5-column metadata grid, severity breakdown bar chart, expandable findings panel, and filterable test case explorer with video links.
+*   Added "History" navigation link to the main dashboard header.
+
+---
+
 ## 🚀 Ongoing / Future Plans
 *   **Phase 4**: Implement Stripe Billing into the Next.js UI for subscription-based access.
 *   **Phase 5**: Full containerization (Docker) of the Playwright workers to decouple the engine execution from the host machine completely.
