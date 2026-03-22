@@ -756,6 +756,17 @@ export default function BhrmshreeDashboard() {
           </span>
         </div>
 
+        {/* History Link */}
+        <a href="/dashboard/history" style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+          color: 'var(--text-muted)', textDecoration: 'none',
+          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)',
+          transition: 'all 0.15s',
+        }}>
+          <Clock size={12} /> History
+        </a>
+
         {/* URL Input */}
         <div style={{ flex: 1, position: 'relative' }}>
           <Crosshair size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
