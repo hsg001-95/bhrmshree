@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Next.js Dashboard",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Compiling.*",
+          "endsPattern": ".*Ready in.*"
+        }
+      }
+    },
+    {
+      "label": "Start Bhrmshree Engine Server",
+      "type": "shell",
+      "command": "npx tsx bhrmshree.ts serve",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

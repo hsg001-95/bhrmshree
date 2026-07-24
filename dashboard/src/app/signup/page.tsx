@@ -17,18 +17,22 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name } }
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } }
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      setSuccess(true);
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess(true);
+      }
+    } catch {
+      setError('Unable to reach the authentication service. Check the Supabase URL and network access.');
+    } finally {
       setLoading(false);
     }
   };

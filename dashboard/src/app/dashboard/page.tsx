@@ -9,7 +9,8 @@ import {
   CircleX, Loader, ChevronDown, Camera, ExternalLink
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '../../lib/supabase';
+
 
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS
@@ -34,7 +35,7 @@ interface TestCase {
   id: string;
   name: string;
   status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
-  phase: 'explorer' | 'shadow' | 'sweeper';
+  phase: 'shadow' | 'sweeper';
   screenshotUrl?: string;
   errorMessage?: string;
   durationMs?: number;
@@ -43,7 +44,7 @@ interface TestCase {
 }
 
 interface PhaseProgress {
-  phase: 'explorer' | 'shadow' | 'sweeper';
+  phase: 'shadow' | 'sweeper';
   totalTests: number;
   completed: number;
   passCount: number;
@@ -65,7 +66,7 @@ interface ScanSummary {
   lowCount: number;
 }
 
-type TabId = 'explorer' | 'shadow' | 'sweeper';
+type TabId = 'shadow' | 'sweeper';
 
 // ═══════════════════════════════════════════════════════════
 //  MAIN DASHBOARD COMPONENT
@@ -73,7 +74,7 @@ type TabId = 'explorer' | 'shadow' | 'sweeper';
 
 export default function BhrmshreeDashboard() {
   // Core state
-  const [activeTab, setActiveTab] = useState<TabId>('explorer');
+  const [activeTab, setActiveTab] = useState<TabId>('shadow');
   const [phase, setPhase] = useState<string>('IDLE');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
@@ -102,11 +103,24 @@ export default function BhrmshreeDashboard() {
   }, []);
 
   useEffect(() => {
-    const socket: Socket = io('http://localhost:4005');
+    const socket: Socket = io('http://localhost:4005', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+    });
 
     socket.on('connect', () => {
       setIsConnected(true);
       setLogs(prev => [...prev, { msg: '🟢 Connected to Bhrmshree Engine.', type: 'system', time: new Date().toLocaleTimeString() }]);
+    });
+
+    socket.on('connect_error', (err) => {
+      setIsConnected(false);
+      // Fallback check if HTTP server is responding on 4005
+      fetch('http://localhost:4005/api/state')
+        .then(res => { if (res.ok) setIsConnected(true); })
+        .catch(() => setIsConnected(false));
     });
 
     socket.on('disconnect', () => setIsConnected(false));
@@ -124,8 +138,7 @@ export default function BhrmshreeDashboard() {
       if (data.phase) {
         setPhase(data.phase);
         // Auto-switch tab based on phase
-        if (data.phase === 'DISCOVERY') setActiveTab('explorer');
-        else if (data.phase === 'SECURITY_PROBE') setActiveTab('shadow');
+        if (data.phase === 'SECURITY_PROBE') setActiveTab('shadow');
       }
 
       if (data.log) {
@@ -232,8 +245,8 @@ export default function BhrmshreeDashboard() {
       { msg: `🎯 Target locked: ${targetUrl}`, type: 'info', time: new Date().toLocaleTimeString() },
       ...(repoDir ? [{ msg: `📂 Repo path provided: ${repoDir}`, type: 'info' as const, time: new Date().toLocaleTimeString() }] : []),
     ]);
-    setPhase('DISCOVERY');
-    setActiveTab('explorer');
+    setPhase('SECURITY_PROBE');
+    setActiveTab('shadow');
 
     try {
       await fetch('http://localhost:4005/api/scan', {
@@ -260,105 +273,7 @@ export default function BhrmshreeDashboard() {
   //  PHASE 1: QA EXPLORER TAB
   // ═══════════════════════════════════════════════════════════
 
-  const ExplorerTab = () => {
-    const phaseTests = getPhaseTests('explorer');
-    const progress = getProgress('explorer');
-    const pct = progress.totalTests ? Math.round((progress.completed / progress.totalTests) * 100) : 0;
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, height: '100%', overflow: 'hidden' }}>
-        {/* Phase Header */}
-        <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-          <div className="glass-card" style={{ flex: 1, padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Monitor size={18} style={{ color: 'var(--accent-blue)' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>QA Testing</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Automated functionality verification</div>
-                </div>
-              </div>
-              <span className={`badge badge-${progress.status === 'running' ? 'running' : progress.status === 'completed' ? 'passed' : 'pending'}`}>
-                {progress.status === 'running' ? '● RUNNING' : progress.status === 'completed' ? '✓ COMPLETE' : '○ IDLE'}
-              </span>
-            </div>
-            <div className="progress-bar">
-              <div className={`progress-fill explorer ${progress.status === 'running' ? 'animated' : ''}`} style={{ width: `${pct}%` }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
-              <span>{progress.completed}/{progress.totalTests} tests complete</span>
-              <span>{pct}%</span>
-            </div>
-          </div>
-
-          {/* QA Stats */}
-          <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
-            <div className="glass-card summary-stat" style={{ minWidth: 100 }}>
-              <div className="value" style={{ color: 'var(--accent-green)' }}>{progress.passCount}</div>
-              <div className="label">Passed</div>
-            </div>
-            <div className="glass-card summary-stat" style={{ minWidth: 100 }}>
-              <div className="value" style={{ color: 'var(--accent-red)' }}>{progress.failCount}</div>
-              <div className="label">Failed</div>
-            </div>
-            <div className="glass-card summary-stat" style={{ minWidth: 100 }}>
-              <div className="value gradient-text">{progress.totalTests}</div>
-              <div className="label">Total</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Test Grid */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 }}>
-            {phaseTests.length === 0 ? (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-                <Monitor size={40} style={{ opacity: 0.3, marginBottom: 16 }} />
-                <p style={{ fontSize: 14, fontWeight: 500 }}>Waiting for QA tests to begin...</p>
-                <p style={{ fontSize: 12, marginTop: 6, opacity: 0.6 }}>Launch a scan to start testing</p>
-              </div>
-            ) : (
-              phaseTests.map(test => (
-                <div
-                  key={test.id}
-                  className={`test-card ${test.status}`}
-                  onClick={() => test.status !== 'pending' && setSelectedTest(test)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                    <StatusIcon status={test.status} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{test.name}</span>
-                        {test.durationMs && (
-                          <span className="terminal-text" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatMs(test.durationMs)}</span>
-                        )}
-                      </div>
-                      {test.description && (
-                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>{test.description}</p>
-                      )}
-                      {test.errorMessage && (
-                        <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(255,59,92,0.06)', border: '1px solid rgba(255,59,92,0.12)' }}>
-                          <span style={{ fontSize: 11, color: 'var(--accent-red)' }}>⚠ {test.errorMessage}</span>
-                        </div>
-                      )}
-                      {test.status !== 'pending' && test.status !== 'running' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                          <Camera size={10} style={{ color: 'var(--text-muted)' }} />
-                          <span style={{ fontSize: 10, color: 'var(--accent-blue)', cursor: 'pointer' }}>View Snapshot</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Phase 1 Explorer Tab component removed.
 
   // ═══════════════════════════════════════════════════════════
   //  PHASE 2: SHADOW AGENT TAB
@@ -707,7 +622,7 @@ export default function BhrmshreeDashboard() {
 
   if (!hasMounted) return null;
 
-  const explorerProgress = getProgress('explorer');
+  // Removed explorerProgress
   const shadowProgress = getProgress('shadow');
   const sweeperProgress = getProgress('sweeper');
   const totalVulns = findings.length;
@@ -820,21 +735,7 @@ export default function BhrmshreeDashboard() {
       {/* ═══════════ TAB NAVIGATION ═══════════ */}
       <div style={{ padding: '16px 24px 0', flexShrink: 0 }}>
         <div className="tab-nav">
-          <button
-            className={`tab-btn ${activeTab === 'explorer' ? 'active explorer' : ''}`}
-            onClick={() => setActiveTab('explorer')}
-          >
-            <Monitor size={14} />
-            Phase 1: QA Explorer
-            {explorerProgress.status !== 'idle' && (
-              <span className="tab-badge" style={{
-                background: explorerProgress.failCount > 0 ? 'rgba(255,59,92,0.15)' : 'rgba(0,230,118,0.15)',
-                color: explorerProgress.failCount > 0 ? 'var(--accent-red)' : 'var(--accent-green)',
-              }}>
-                {explorerProgress.completed}/{explorerProgress.totalTests}
-              </span>
-            )}
-          </button>
+          {/* Explorer tab btn removed */}
           <button
             className={`tab-btn ${activeTab === 'shadow' ? 'active shadow' : ''}`}
             onClick={() => setActiveTab('shadow')}
@@ -870,7 +771,7 @@ export default function BhrmshreeDashboard() {
 
       {/* ═══════════ TAB CONTENT ═══════════ */}
       <div style={{ flex: 1, padding: '16px 24px', overflow: 'hidden' }}>
-        {activeTab === 'explorer' && <ExplorerTab />}
+        {/* Explorer panel render removed */}
         {activeTab === 'shadow' && <ShadowTab />}
         {activeTab === 'sweeper' && <SweeperTab />}
       </div>

@@ -44,14 +44,14 @@ if [ ! -f .env ]; then
 fi
 
 # Ask for API Key if not set
-current_key=$(grep GOOGLE_AI_API_KEY .env | cut -d '=' -f2)
-if [[ $current_key == *"your-gemini-api-key"* || -z $current_key ]]; then
-    echo -e "${GREEN}Please enter your Google AI API Key (Gemini):${NC}"
+current_key=$(grep GITHUB_API_KEY .env | cut -d '=' -f2)
+if [[ $current_key == *"your-github-api-key"* || -z $current_key ]]; then
+    echo -e "${GREEN}Please enter your GitHub API Key / Token:${NC}"
     read -p "> " api_key
-    sed -i "s/GOOGLE_AI_API_KEY=.*/GOOGLE_AI_API_KEY=$api_key/" .env
-    echo -e "✓ API Key saved to .env"
+    sed -i "s/GITHUB_API_KEY=.*/GITHUB_API_KEY=$api_key/" .env
+    echo -e "✓ GitHub API Key saved to .env"
 else
-    echo -e "✓ API Key already configured."
+    echo -e "✓ GitHub API Key already configured."
 fi
 
 # 4. Launch Options

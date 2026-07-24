@@ -146,7 +146,7 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, function (request) { 
                 return [2 /*return*/, {
                         content: [{
                                 type: "text",
-                                text: "\uD83D\uDE80 DevSecQA Scan successfully initiated!\n\nTarget: ".concat(targetUrl, "\nScan ID: ").concat(scanId, "\nWhite-Box Context: ").concat(projectPath, "\n\nThe Explorer (QA), Shadow (Security), and Sweeper agents are now mapping and testing the application. Please use `bhrmshree_get_status` periodically to monitor progress, or ask the user to open the visual dashboard at http://localhost:4004.")
+                                text: "\uD83D\uDE80 DevSecQA Scan successfully initiated!\n\nTarget: ".concat(targetUrl, "\nScan ID: ").concat(scanId, "\nWhite-Box Context: ").concat(projectPath, "\n\nThe Shadow (Security) and Sweeper agents are now mapping and testing the application. Please use `bhrmshree_get_status` periodically to monitor progress, or ask the user to open the visual dashboard at http://localhost:4004.")
                             }]
                     }];
             case 7:

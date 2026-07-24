@@ -15,14 +15,19 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+      } else {
+        window.location.href = '/dashboard';
+      }
+    } catch {
+      setError('Unable to reach the authentication service. Check the Supabase URL and network access.');
+    } finally {
       setLoading(false);
-    } else {
-      window.location.href = '/dashboard';
     }
   };
 

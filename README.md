@@ -40,7 +40,7 @@ The Bhrmshree engine is powered by three specialized AI agents working in sequen
 
 ### Prerequisites
 - Node.js (v20+)
-- **Google AI API Key** (for Gemini 3.1 Pro capabilities)
+- **GitHub API Key** (for Gemini and Claude models capabilities)
 - **Supabase Project** (Free tier works perfectly)
 
 ### 1. Database Setup (Supabase)
@@ -62,7 +62,7 @@ The Bhrmshree engine is powered by three specialized AI agents working in sequen
    # dashboard/.env.local
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   GOOGLE_AI_API_KEY=your-gemini-key
+   GITHUB_API_KEY=your-github-api-key
    ```
 
 ---

@@ -7,8 +7,11 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    "module": "NodeNext",
     "target": "esnext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true,
     "types": [],
     // For nodejs:
     // "lib": ["esnext"],

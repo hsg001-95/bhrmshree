@@ -16,9 +16,9 @@ export class LlmProvider {
   private anthropic: Anthropic;
 
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+    this.genAI = new GoogleGenerativeAI(process.env.GITHUB_API_KEY || '');
     this.anthropic = new Anthropic({ 
-      apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key' 
+      apiKey: process.env.GITHUB_API_KEY || 'missing-key' 
     });
   }
 

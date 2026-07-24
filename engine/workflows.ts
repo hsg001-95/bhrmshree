@@ -3,7 +3,6 @@ import type * as activities from './activities.ts';
 import type { BhrmshreeTask, PipelineState } from '../shared/types.ts';
 
 const { 
-  runDiscoveryActivity, 
   runSecurityProbeActivity, 
   runFinalAssuranceActivity,
   generateReportActivity 
@@ -13,42 +12,46 @@ const {
 
 /**
  * Bhrmshree Unified Workflow:
- * 1. Discovery (QA Explorer Agent)
- * 2. Security Probe (Shadow Agent)
- * 3. Final Assurance (Blind Scan)
- * 4. Reporting
+ * 1. Security Probe (Shadow Agent)
+ * 2. Final Assurance (Blind Scan)
+ * 3. Reporting
  */
 export async function bhrmshreeWorkflow(task: BhrmshreeTask): Promise<PipelineState> {
   const state: PipelineState = {
     status: 'RUNNING',
-    currentPhase: 'DISCOVERY',
+    currentPhase: 'SECURITY_PROBE',
     discoveredEndpoints: [],
     vulnerabilities: [],
     bugs: [],
   };
 
   try {
-    // Phase 1: Discovery (QA)
-    const discoveryResult = await runDiscoveryActivity(task);
+    // Generate initial target blueprint (previously done by Explorer)
+    const blueprint = {
+      targets: [
+        { location: task.targetUrl, type: 'main_page' },
+        { location: `${task.targetUrl}/login`, type: 'auth_form' },
+        { location: `${task.targetUrl}/api`, type: 'api_endpoint' },
+      ],
+    };
+
+    // Phase 1: Security Probe (Hacking)
+    const securityResult = await runSecurityProbeActivity(task, blueprint);
     
-    // Phase 2: Security Probe (Hacking)
-    state.currentPhase = 'SECURITY_PROBE';
-    const securityResult = await runSecurityProbeActivity(task, discoveryResult);
-    
-    // Phase 3: Final Assurance (Blind Scan)
+    // Phase 2: Final Assurance (Blind Scan)
     // Runs AI-driven hyper-guessing for hidden endpoints
-    const assuranceResult = await runFinalAssuranceActivity(task, discoveryResult);
+    const assuranceResult = await runFinalAssuranceActivity(task, blueprint);
     
     // Update findings from all phases
     state.vulnerabilities = [
       ...securityResult.findings.filter(f => f.type === 'VULNERABILITY'),
       ...assuranceResult.findings.filter(f => f.type === 'VULNERABILITY')
     ];
-    state.bugs = discoveryResult.findings.filter(f => f.type === 'BUG');
+    state.bugs = []; // No bugs since explorer/discovery phase is removed
 
-    // Phase 4: Reporting
+    // Phase 3: Reporting
     state.currentPhase = 'REPORTING';
-    await generateReportActivity([discoveryResult, securityResult, assuranceResult]);
+    await generateReportActivity([securityResult, assuranceResult]);
 
     state.status = 'COMPLETED';
     return state;
@@ -57,3 +60,4 @@ export async function bhrmshreeWorkflow(task: BhrmshreeTask): Promise<PipelineSt
     throw error;
   }
 }
+

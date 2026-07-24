@@ -57,27 +57,14 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section id="features" className="features-section">
-        <h2 className="section-title">Three Autonomous AI Agents</h2>
-        <p className="section-subtitle">Each agent specializes in a different aspect of security and quality assurance</p>
+        <h2 className="section-title">Two Autonomous AI Agents</h2>
+        <p className="section-subtitle">Each agent specializes in a different aspect of security auditing</p>
         <div className="features-grid">
-          <div className="feature-card explorer-card">
-            <div className="feature-icon explorer"><Eye size={24} /></div>
-            <h3>Explorer Agent</h3>
-            <p className="feature-phase">Phase 1 — QA Reconnaissance</p>
-            <p>Maps your application like a real user. Navigates pages, fills forms, clicks buttons.
-            Generates and executes dynamic Playwright test suites with video recording.</p>
-            <ul className="feature-list">
-              <li>AI-generated test plans from codebase analysis</li>
-              <li>Automated happy path verification</li>
-              <li>Per-test video recordings</li>
-            </ul>
-          </div>
-
           <div className="feature-card shadow-card">
             <div className="feature-icon shadow"><Lock size={24} /></div>
             <h3>Shadow Agent</h3>
-            <p className="feature-phase">Phase 2 — Security Penetration</p>
-            <p>Uses the Explorer's functional map as a blueprint to launch surgical attacks.
+            <p className="feature-phase">Phase 1 — Security Penetration</p>
+            <p>Launches surgical penetration attacks and audits security vulnerabilities.
             Multi-turn exploitation with Gemini reasoning.</p>
             <ul className="feature-list">
               <li>XSS, SQLi, SSRF, IDOR attacks</li>
@@ -90,7 +77,7 @@ export default function LandingPage() {
           <div className="feature-card sweeper-card">
             <div className="feature-icon sweeper"><FolderSearch size={24} /></div>
             <h3>Sweeper Agent</h3>
-            <p className="feature-phase">Phase 3 — Hidden Path Discovery</p>
+            <p className="feature-phase">Phase 2 — Hidden Path Discovery</p>
             <p>AI-driven "hyper-guessing" to discover exposed files, debug endpoints,
             and admin panels that shouldn't be public.</p>
             <ul className="feature-list">
@@ -116,8 +103,8 @@ export default function LandingPage() {
           <div className="step-arrow"><ArrowRight size={24} /></div>
           <div className="step">
             <div className="step-number">2</div>
-            <h3>AI Explores & Attacks</h3>
-            <p>Three autonomous agents work in sequence — exploring, penetration testing, and sweeping for hidden paths.</p>
+            <h3>AI Attacks & Sweeps</h3>
+            <p>Two autonomous agents work in sequence — penetration testing and sweeping for hidden paths.</p>
           </div>
           <div className="step-arrow"><ArrowRight size={24} /></div>
           <div className="step">

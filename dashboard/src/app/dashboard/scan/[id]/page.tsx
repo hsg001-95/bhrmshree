@@ -9,7 +9,8 @@ import {
   Target, FolderSearch, Monitor, Skull, Camera,
   Download, Share2, BarChart3
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '../../../../lib/supabase';
+
 
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS
@@ -64,7 +65,7 @@ interface TestCaseRecord {
 
 export default function ScanReportPage() {
   const params = useParams();
-  const scanId = params.id as string;
+  const scanId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [scan, setScan] = useState<ScanRecord | null>(null);
   const [findings, setFindings] = useState<FindingRecord[]>([]);
@@ -78,6 +79,7 @@ export default function ScanReportPage() {
   }, [scanId]);
 
   const fetchScanData = async () => {
+    if (!scanId) return;
     setLoading(true);
     const supabase = createClient();
 
@@ -165,7 +167,6 @@ export default function ScanReportPage() {
     );
   }
 
-  const explorerTests = testCases.filter(t => t.phase === 'explorer');
   const shadowTests = testCases.filter(t => t.phase === 'shadow');
   const sweeperTests = testCases.filter(t => t.phase === 'sweeper');
 
@@ -363,7 +364,7 @@ export default function ScanReportPage() {
               </span>
               <div style={{ flex: 1 }} />
               <div style={{ display: 'flex', gap: 4 }}>
-                {['all', 'explorer', 'shadow', 'sweeper'].map(tab => (
+                {['all', 'shadow', 'sweeper'].map(tab => (
                   <button key={tab} onClick={() => setActivePhaseTab(tab)} style={{
                     padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600,
                     background: activePhaseTab === tab ? 'rgba(99,102,241,0.15)' : 'transparent',

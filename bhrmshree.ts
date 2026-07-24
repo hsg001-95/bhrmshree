@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { ExplorerAgent } from './engine/agents/explorer.ts';
 import { ShadowAgent } from './engine/agents/shadow.ts';
 import { SweeperAgent } from './engine/agents/sweeper.ts';
 import { startBhrmshreeServer } from './engine/server.ts';
@@ -188,10 +187,13 @@ async function main() {
     process.exit(1);
   }
 
-  const apiKey = process.env.GOOGLE_AI_API_KEY || '';
+  const apiKey = process.env.GITHUB_API_KEY || '';
   if (!apiKey) {
-    console.error(`  ${COLORS.bgRed} ERROR ${COLORS.reset} GOOGLE_AI_API_KEY not set in .env file`);
-    process.exit(1);
+    if (!isServeMode) {
+      console.error(`  ${COLORS.bgRed} ERROR ${COLORS.reset} GITHUB_API_KEY not set in .env file`);
+      process.exit(1);
+    }
+    log('⚠️ GITHUB_API_KEY not set. Dashboard will start in standby mode without scan execution.', 'system');
   }
 
   const scanId = `scan-${Date.now()}`;
@@ -235,67 +237,12 @@ async function main() {
     codeContext = await scanCodebaseContext(repo);
   }
 
-  // ═══════════ PHASE 1: EXPLORER ═══════════
-  console.log(`\n  ${COLORS.bgCyan}${COLORS.bold} PHASE 1: EXPLORER — QA Reconnaissance ${COLORS.reset}\n`);
-  
-  try {
-    const explorer = new ExplorerAgent(apiKey);
-    const task: BhrmshreeTask = {
-      id: scanId,
-      role: 'EXPLORER',
-      phase: 'DISCOVERY',
-      targetUrl: url,
-      repoPath: repo,
-      context: codeContext,
-    };
-
-    log('🚀 Deploying Explorer Agent to map functional targets...', 'qa');
-    
-    const plannedTests = await explorer.generateTestPlan(task);
-    log(`📈 Generated ${plannedTests.length} dynamic test cases.`, 'qa');
-
-    let passCount = 0;
-    let failCount = 0;
-
-    for (const testPlan of plannedTests) {
-      log(`🧪 Running: ${testPlan.name}`, 'qa');
-      const videoFileName = `phase1-${testPlan.id}-${Date.now()}.webm`;
-      const videoPath = path.join(process.cwd(), 'dashboard', 'public', 'videos', scanId);
-      await fs.mkdir(videoPath, { recursive: true });
-      const fullVideoPath = path.join(videoPath, videoFileName);
-      
-      const result = await explorer.executeTest(url, testPlan, fullVideoPath);
-      
-      if (result.success) {
-        log(`✅ Passed: ${testPlan.name}`, 'success');
-        passCount++;
-      } else {
-        log(`❌ Failed: ${testPlan.name}`, 'error');
-        log(`   └─ ${result.error}`, 'error');
-        failCount++;
-        allFindings.push({
-          type: 'BUG',
-          severity: testPlan.severity || 'MEDIUM',
-          title: `QA Failure: ${testPlan.name}`,
-          description: testPlan.description || 'Test failed during execution.',
-          reproSteps: testPlan.steps.map((s: any) => `${s.type} ${s.selector || ''} ${s.payload || ''}`),
-          location: url,
-          screenshotUrl: `/videos/${scanId}/${videoFileName}`
-        });
-      }
-    }
-    
-    log(`✅ Explorer Phase completed — ${passCount} passed, ${failCount} failed`, 'success');
-  } catch (error: any) {
-    log(`❌ Explorer failed: ${error.message}`, 'error');
-  }
-
   // ═══════════ PHASE 2: SHADOW ═══════════
   console.log(`\n  ${COLORS.bgRed}${COLORS.bold} PHASE 2: SHADOW — Security Penetration ${COLORS.reset}\n`);
   
   let shadowResult: AgentResult | null = null;
   try {
-    const shadow = new ShadowAgent(apiKey);
+    const shadow = new ShadowAgent();
     const task: BhrmshreeTask = {
       id: scanId,
       role: 'SHADOW',
@@ -331,10 +278,10 @@ async function main() {
   
   let sweeperResult: AgentResult | null = null;
   try {
-    const sweeper = new SweeperAgent(apiKey);
+    const sweeper = new SweeperAgent();
     const task: BhrmshreeTask = {
       id: scanId,
-      role: 'EXPLORER',
+      role: 'SWEEPER',
       phase: 'VALIDATION',
       targetUrl: url,
       repoPath: repo,

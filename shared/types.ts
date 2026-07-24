@@ -1,5 +1,5 @@
-export type AgentRole = 'EXPLORER' | 'SHADOW' | 'VERIFIER';
-export type ScanPhase = 'DISCOVERY' | 'SECURITY_PROBE' | 'VALIDATION' | 'REPORTING';
+export type AgentRole = 'SHADOW' | 'SWEEPER' | 'VERIFIER';
+export type ScanPhase = 'SECURITY_PROBE' | 'VALIDATION' | 'REPORTING';
 
 export interface BhrmshreeTask {
   id: string;
@@ -50,7 +50,7 @@ export interface TestCase {
   id: string;
   name: string;
   status: TestStatus;
-  phase: 'explorer' | 'shadow' | 'sweeper';
+  phase: 'shadow' | 'sweeper';
   screenshotUrl?: string;   // URL to screenshot when test completes
   videoUrl?: string;        // URL to recorded video of the test
   errorMessage?: string;    // Error details if failed
@@ -60,7 +60,7 @@ export interface TestCase {
 }
 
 export interface PhaseProgress {
-  phase: 'explorer' | 'shadow' | 'sweeper';
+  phase: 'shadow' | 'sweeper';
   totalTests: number;
   completed: number;
   passCount: number;
@@ -76,7 +76,7 @@ export interface ScanSummary {
   targetUrl: string;
   totalDurationMs: number;
   phases: {
-    explorer: PhaseProgress;
+    explorer?: PhaseProgress;
     shadow: PhaseProgress;
     sweeper: PhaseProgress;
   };

@@ -5,10 +5,10 @@ echo ==================================================
 echo.
 
 :: Navigate to the Bhrmshree directory
-cd /d "c:\mini project\Bhrmshree"
+cd /d "%~dp0"
 
 echo Starting Next.js Dashboard on Port 4004...
-start "Bhrmshree Dashboard (Next.js)" cmd /k "cd dashboard && npm run dev -p 4004"
+start "Bhrmshree Dashboard (Next.js)" cmd /k "cd dashboard && npm run dev"
 
 echo Starting Backend Engine API on Port 4005...
 start "Bhrmshree Engine (Node.js)" cmd /k "npx tsx bhrmshree.ts serve"

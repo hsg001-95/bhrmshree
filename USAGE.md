@@ -31,7 +31,7 @@ Copy the template and add your API key:
 cp .env.example .env
 nano .env
 ```
-*Make sure `GOOGLE_AI_API_KEY` is set correctly.*
+*Make sure `GITHUB_API_KEY` is set correctly.*
 
 ---
 

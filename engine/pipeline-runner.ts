@@ -1,4 +1,3 @@
-import { ExplorerAgent } from './agents/explorer.ts';
 import { ShadowAgent } from './agents/shadow.ts';
 import { SweeperAgent } from './agents/sweeper.ts';
 import { ScreenshotManager } from './screenshot-manager.ts';
@@ -43,10 +42,10 @@ export class PipelineRunner {
 
   constructor(io: Server) {
     this.io = io;
-    this.apiKey = process.env.GOOGLE_AI_API_KEY || '';
+    this.apiKey = process.env.GITHUB_API_KEY || '';
     this.screenshots = new ScreenshotManager();
     if (!this.apiKey) {
-      console.error('[Pipeline] ⚠️ GOOGLE_AI_API_KEY not set in .env');
+      console.error('[Pipeline] ⚠️ GITHUB_API_KEY not set in .env');
     }
   }
 
@@ -244,7 +243,7 @@ export class PipelineRunner {
       const { data } = await supabase.from('scans').select('id').eq('scan_id', scanId).single();
       if (data) {
         this.scanUuid = data.id;
-        await supabase.from('scans').update({ status: 'running', current_phase: 'DISCOVERY' }).eq('id', this.scanUuid);
+        await supabase.from('scans').update({ status: 'running', current_phase: 'SECURITY_PROBE' }).eq('id', this.scanUuid);
       } else {
         this.log(`⚠️ Scan ID ${scanId} not found in Supabase. Running in local-only mode.`, 'system');
       }
@@ -256,146 +255,6 @@ export class PipelineRunner {
     let codeContext = '';
     if (repoPath) {
       codeContext = await this.scanCodebaseContext(repoPath);
-    }
-
-    // ═══════════ PHASE 1: EXPLORER (QA) ═══════════
-    this.log('═══════════════════════════════════════════', 'system');
-    this.log('🔍 PHASE 1: EXPLORER — AI Test Planning & Execution', 'qa');
-    this.log('═══════════════════════════════════════════', 'system');
-
-    this.emit({ phase: 'DISCOVERY' });
-
-    // We no longer pre-declare explorerProgress because it depends on the generated tests.
-    let explorerProgress: PhaseProgress = {
-      phase: 'explorer',
-      totalTests: 0,
-      completed: 0,
-      passCount: 0,
-      failCount: 0,
-      status: 'running',
-      startedAt: Date.now(),
-    };
-
-    try {
-      const explorer = new ExplorerAgent();
-      const explorerTask: BhrmshreeTask = {
-        id: scanId,
-        role: 'EXPLORER',
-        phase: 'DISCOVERY',
-        targetUrl,
-        repoPath: repoPath || '',
-        context: codeContext,
-      };
-
-      this.log('🚀 AI is analyzing codebase to map functional targets...', 'qa');
-      const plannedTests = await explorer.generateTestPlan(explorerTask);
-    
-    // Map LLM output to TestCase interface
-    const explorerTests: TestCase[] = plannedTests.map((pt, i) => ({
-      id: `qa-${i}-${pt.id}`,
-      name: pt.name,
-      description: pt.description,
-      status: 'pending',
-      phase: 'explorer',
-      severity: pt.severity || 'MEDIUM',
-      // Store the raw steps internally so we can pass them back later
-      _steps: pt.steps 
-    } as any));
-
-    explorerProgress.totalTests = explorerTests.length;
-    this.emitPhaseProgress(explorerProgress);
-    
-    // Emit all pending tests at once so the dashboard can show the full list
-    for (const test of explorerTests) {
-      this.emitTestUpdate(test);
-    }
-
-    this.log(`📈 Generated ${explorerTests.length} dynamic test cases to verify.`, 'qa');
-
-    // Execute each generated test in isolation with video recording
-    for (let i = 0; i < explorerTests.length; i++) {
-      const test = explorerTests[i]!;
-      const testPlan = plannedTests[i]!;
-      const startTimeTest = Date.now();
-
-      test.status = 'running';
-      explorerProgress.currentTest = test.name;
-      this.emitTestUpdate(test);
-      this.emitPhaseProgress({ ...explorerProgress });
-      this.log(`🧪 Running: ${test.name}`, 'qa');
-      
-      // Setup video output path
-      const videoFileName = `phase1-${test.id}-${Date.now()}.webm`;
-      const videoPath = path.join(process.cwd(), 'dashboard', 'public', 'videos', scanId);
-      await fs.mkdir(videoPath, { recursive: true });
-      const fullVideoPath = path.join(videoPath, videoFileName);
-
-      // Await the isolated Playwright context execution (will timeout on its own if stuck)
-      const result = await explorer.executeTest(targetUrl, testPlan, fullVideoPath);
-      
-      test.durationMs = Date.now() - startTimeTest;
-
-      // Upload video to Supabase
-      let cloudVideoUrl = `/videos/${scanId}/${videoFileName}`; // default local
-      try {
-        const videoBuffer = await fs.readFile(fullVideoPath);
-        const { data: uploadData, error } = await supabase.storage
-          .from('scans')
-          .upload(`${scanId}/${videoFileName}`, videoBuffer, { contentType: 'video/webm' });
-        
-        if (!error && uploadData) {
-          const { data: { publicUrl } } = supabase.storage.from('scans').getPublicUrl(uploadData.path);
-          cloudVideoUrl = publicUrl;
-        } else {
-          this.log(`⚠️ Supabase upload failed: ${error?.message}`, 'system');
-        }
-      } catch (e: any) {
-        this.log(`⚠️ Supabase upload error: ${e.message}`, 'system');
-      }
-      
-      if (result.success) {
-        test.status = 'passed';
-        test.videoUrl = cloudVideoUrl;
-        explorerProgress.passCount++;
-        this.log(`✅ Passed: ${test.name}`, 'qa');
-      } else {
-        test.status = 'failed';
-        test.errorMessage = result.error || 'Test failed without a specific error message.';
-        test.videoUrl = cloudVideoUrl;
-        explorerProgress.failCount++;
-        this.log(`❌ Failed: ${test.name}`, 'qa');
-        this.log(`   └─ ${result.error}`, 'qa');
-        
-        // Log as a finding for the final report
-        const finding: Finding = {
-          type: 'BUG',
-          severity: test.severity || 'MEDIUM',
-          title: `QA Failure: ${test.name}`,
-          description: test.description || 'Test failed during execution.',
-          reproSteps: testPlan.steps.map((s: any) => `${s.type} ${s.selector || ''} ${s.payload || ''}`),
-          location: targetUrl,
-          screenshotUrl: test.videoUrl // Reuse screenshotUrl field for video or adapt Dashboard
-        };
-        this.currentState.findings.push(finding);
-        this.emit({ finding });
-        this.syncSupabaseFinding(finding).catch(e => console.error(e));
-      }
-
-      this.emitTestUpdate(test);
-      explorerProgress.completed++;
-      this.emitPhaseProgress({ ...explorerProgress });
-    }
-
-    explorerProgress.status = 'completed';
-    delete explorerProgress.currentTest;
-    explorerProgress.completedAt = Date.now();
-    this.emitPhaseProgress(explorerProgress);
-    this.log(`🎉 Phase 1 Explorer completed.`, 'qa');
-
-    } catch (error: any) {
-      explorerProgress.status = 'failed';
-      this.emitPhaseProgress(explorerProgress);
-      this.log(`❌ Explorer failed: ${error.message}`, 'system');
     }
 
     // ═══════════ PHASE 2: SHADOW (Security) ═══════════
@@ -634,7 +493,6 @@ export class PipelineRunner {
       targetUrl,
       totalDurationMs: totalTime,
       phases: {
-        explorer: this.currentState.phases['explorer'] || explorerProgress,
         shadow: this.currentState.phases['shadow'] || shadowProgress,
         sweeper: this.currentState.phases['sweeper'] || sweeperProgress,
       },

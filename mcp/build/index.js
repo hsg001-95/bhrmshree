@@ -93,7 +93,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     return {
                         content: [{
                                 type: "text",
-                                text: `🚀 DevSecQA Scan successfully initiated!\n\nTarget: ${targetUrl}\nScan ID: ${scanId}\nWhite-Box Context: ${projectPath}\n\nThe Explorer (QA), Shadow (Security), and Sweeper agents are now mapping and testing the application. Please use \`bhrmshree_get_status\` periodically to monitor progress, or ask the user to open the visual dashboard at http://localhost:4004.`
+                                text: `🚀 DevSecQA Scan successfully initiated!\n\nTarget: ${targetUrl}\nScan ID: ${scanId}\nWhite-Box Context: ${projectPath}\n\nThe Shadow (Security) and Sweeper agents are now mapping and testing the application. Please use \`bhrmshree_get_status\` periodically to monitor progress, or ask the user to open the visual dashboard at http://localhost:4004.`
                             }]
                     };
                 }

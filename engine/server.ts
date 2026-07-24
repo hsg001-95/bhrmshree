@@ -13,7 +13,10 @@ export async function startBhrmshreeServer() {
   const app = express();
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
-    cors: { origin: "*" }
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
   });
 
   // Engine API now runs on 4005, Next.js dashboard on 4004

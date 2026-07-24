@@ -7,7 +7,8 @@ import {
   Loader, RefreshCw, Calendar, BarChart3, Target,
   Bug, Lock, FolderSearch, Eye
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '../../../lib/supabase';
+
 
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Integrated Browser (Dashboard)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:4004",
+      "webRoot": "${workspaceFolder}/dashboard",
+      "sourceMaps": true
+    },
+    {
+      "name": "Launch Bhrmshree Engine",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "bhrmshree.ts", "serve"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
