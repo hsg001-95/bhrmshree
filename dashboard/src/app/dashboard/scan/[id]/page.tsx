@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { createClient } from '../../../../lib/supabase';
 
+export const runtime = 'edge';
+
 
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS
