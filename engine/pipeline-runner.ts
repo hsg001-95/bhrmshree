@@ -400,7 +400,7 @@ export class PipelineRunner {
       const sweeper = new SweeperAgent();
       const task: BhrmshreeTask = {
         id: scanId,
-        role: 'EXPLORER',
+        role: 'SWEEPER',
         phase: 'VALIDATION',
         targetUrl,
         repoPath: repoPath || '',

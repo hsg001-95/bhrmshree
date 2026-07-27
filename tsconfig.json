@@ -43,5 +43,16 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+  "include": [
+    "engine/**/*.ts",
+    "bhrmshree.ts",
+    "shared/**/*.ts",
+    "adapters/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dashboard",
+    "mcp"
+  ]
 }
