@@ -16,12 +16,12 @@ RUN npm install
 # (Excludes dashboard/ and mcp/ via .dockerignore)
 COPY . .
 
-# Expose the API port that the Next.js dashboard will talk to
-EXPOSE 4005
+# Expose the API port (Hugging Face default port is 7860)
+EXPOSE 7860
 
 # Define environment variables (These should be passed in at runtime)
 ENV NODE_ENV=production
-ENV PORT=4005
+ENV PORT=7860
 
 # Start the engine API server using tsx
 CMD ["npx", "tsx", "engine/server.ts"]
