@@ -30,6 +30,11 @@ export async function startBhrmshreeServer() {
   // Serve screenshots directory
   app.use('/screenshots', express.static(path.join(process.cwd(), 'dashboard/public/screenshots')));
 
+  // Health Check route for Render/Koyeb deployment
+  app.get('/', (_req: any, res: any) => {
+    res.json({ status: 'healthy', platform: 'Bhrmshree Engine' });
+  });
+
   // API to get current scan state (for late-joining clients)
   app.get('/api/state', (_req: any, res: any) => {
     res.json(pipeline.currentState);
