@@ -68,6 +68,8 @@ interface ScanSummary {
 
 type TabId = 'shadow' | 'sweeper';
 
+const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:4005';
+
 // ═══════════════════════════════════════════════════════════
 //  MAIN DASHBOARD COMPONENT
 // ═══════════════════════════════════════════════════════════
@@ -103,7 +105,7 @@ export default function BhrmshreeDashboard() {
   }, []);
 
   useEffect(() => {
-    const socket: Socket = io('http://localhost:4005', {
+    const socket: Socket = io(ENGINE_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -117,8 +119,8 @@ export default function BhrmshreeDashboard() {
 
     socket.on('connect_error', (err) => {
       setIsConnected(false);
-      // Fallback check if HTTP server is responding on 4005
-      fetch('http://localhost:4005/api/state')
+      // Fallback check if HTTP server is responding
+      fetch(`${ENGINE_URL}/api/state`)
         .then(res => { if (res.ok) setIsConnected(true); })
         .catch(() => setIsConnected(false));
     });
@@ -249,7 +251,7 @@ export default function BhrmshreeDashboard() {
     setActiveTab('shadow');
 
     try {
-      await fetch('http://localhost:4005/api/scan', {
+      await fetch(`${ENGINE_URL}/api/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUrl, repoDir, id: scanIdString })
@@ -588,7 +590,7 @@ export default function BhrmshreeDashboard() {
               <div className="screenshot-placeholder">
                 {selectedTest.screenshotUrl ? (
                   <img 
-                    src={selectedTest.screenshotUrl} 
+                    src={selectedTest.screenshotUrl.startsWith('/') ? `${ENGINE_URL}${selectedTest.screenshotUrl}` : selectedTest.screenshotUrl} 
                     alt={`Screenshot for ${selectedTest.name}`}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
