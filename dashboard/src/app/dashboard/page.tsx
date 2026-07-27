@@ -69,7 +69,6 @@ interface ScanSummary {
 type TabId = 'shadow' | 'sweeper';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:4005';
-
 // ═══════════════════════════════════════════════════════════
 //  MAIN DASHBOARD COMPONENT
 // ═══════════════════════════════════════════════════════════
@@ -590,7 +589,7 @@ export default function BhrmshreeDashboard() {
               <div className="screenshot-placeholder">
                 {selectedTest.screenshotUrl ? (
                   <img 
-                    src={selectedTest.screenshotUrl.startsWith('/') ? `${ENGINE_URL}${selectedTest.screenshotUrl}` : selectedTest.screenshotUrl} 
+                    src={selectedTest.screenshotUrl.startsWith('/') ? `${ENGINE_URL}${selectedTest.screenshotUrl}` : selectedTest.screenshotUrl}
                     alt={`Screenshot for ${selectedTest.name}`}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
