@@ -1,11 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bhrmshree",
+  "main": ".vercel/output/static/_worker.js/index.js",
   "compatibility_date": "2026-07-27",
-  "observability": {
-    "enabled": true
-  },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "assets": {
+    "directory": ".vercel/output/static"
+  }
 }
