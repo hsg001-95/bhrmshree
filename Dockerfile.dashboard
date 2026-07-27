@@ -1,0 +1,38 @@
+# Use a lightweight Node Alpine image for the frontend
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies needed for Next.js build
+COPY dashboard/package.json ./dashboard/
+RUN cd dashboard && npm install
+
+# Copy dashboard source code
+COPY dashboard ./dashboard/
+
+# Build the Next.js application
+# We need to pass the Supabase env vars during build if they're public
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+RUN cd dashboard && npm run build
+
+# ---
+# Production Image
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy necessary files from builder
+COPY --from=builder /app/dashboard/package.json ./
+COPY --from=builder /app/dashboard/.next ./.next
+COPY --from=builder /app/dashboard/public ./public
+COPY --from=builder /app/dashboard/node_modules ./node_modules
+
+EXPOSE 4004
+ENV PORT=4004
+
+CMD ["npm", "start", "-p", "4004"]

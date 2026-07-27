@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    container_name: bhrmshree-engine
+    ports:
+      - "4005:4005"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+    # If the user provides a repo parameter, we should mount the parent directory
+    # so the container can access the local code. This mounts their root C: drive into /target for testing.
+    # volumes:
+    #   - /:/target
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    container_name: bhrmshree-dashboard
+    ports:
+      - "4004:4004"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - engine

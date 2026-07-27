@@ -1,0 +1,25 @@
+node_modules/
+.env
+.env.local
+.next/
+out/
+dist/
+*.log
+coverage/
+# GSD state files (session-specific)
+.gsd/STATE.md
+.gsd/JOURNAL.md
+.gsd/TODO.md
+.github/
+.agent/
+.agents/
+.gemini/
+.gsd/
+adapters/
+docs/
+scripts/
+GSD-STYLE.md
+model_capabilities.yaml
+PROJECT_RULES.md
+PROJECT_REVIEW.md
+EXPLORER_EVIDENCE.md
