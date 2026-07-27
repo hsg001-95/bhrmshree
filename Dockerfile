@@ -23,5 +23,5 @@ EXPOSE 7860
 ENV NODE_ENV=production
 ENV PORT=7860
 
-# Start the engine API server using tsx
-CMD ["npx", "tsx", "engine/server.ts"]
+# Start the engine API server in serve mode
+CMD ["npx", "tsx", "bhrmshree.ts", "serve"]
